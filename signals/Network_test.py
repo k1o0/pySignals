@@ -36,18 +36,22 @@ class NetTest(unittest.TestCase):
         def add_net(): nets.append(sig.Net(debug=True))
         self.assertRaises(Exception, add_net, 'failed to raise exception on max networks exceeded')
 
+    @unittest.skip('Not ready yet')
     def test_delete(self):
         # TODO Add test for delete nodes
         pass
 
+    @unittest.skip('Not ready yet')
     def test_root_node(self):
         # TODO Add test for delete nodes
         pass
 
+    @unittest.skip('Not ready yet')
     def test_origin(self):
         # TODO Add test for delete nodes
         pass
 
+    @unittest.skip('Not ready yet')
     def test_get_nodes(self):
         # TODO Add test for delete nodes
         pass

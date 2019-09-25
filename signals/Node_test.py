@@ -87,9 +87,11 @@ class NodeTest(unittest.TestCase):
         o.set_value(4)
         self.assertTrue(called, 'failed to call transfer function')
 
+    @unittest.skip('Not ready yet')
     def test_format_spec(self):
         pass
 
+    @unittest.skip('Not ready yet')
     def test_delete_node(self):
         pass
 
