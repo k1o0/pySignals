@@ -19,7 +19,7 @@ class Net:
 
     def __init__(self, size=4000, debug=False):
         """
-        Network Constructor
+        Network initializer
         :param size:
         :param debug:
         """
@@ -29,6 +29,8 @@ class Net:
         self.size = size  # Max number of nodes in network
         self.debug = debug  # Debug mode
         self.nodes = set()  # Initialize node list
+        if debug:
+            sig.node.Node.verbose = 1
 
     def is_valid(self):
         return self.active & (self.id <= self.MAX_NETWORKS)
@@ -39,12 +41,34 @@ class Net:
         in_use = {node.id for node in self.nodes if node.active}
         available_ids = ids.difference(in_use)
         if not available_ids:
-            raise Exception('Max number of active networks reached')
+            raise Exception('Max number of active nodes reached')
         else:
             return min(available_ids)
 
-    def add_node(self):
-        self.nodes.add(sig.node.Node(self))
+    def origin(self, name):
+        return sig.node.OriginSignal(self.root_node(name))
+
+    def root_node(self, name=None):
+        node = sig.node.Node(self)
+        if name:
+            node._name = name
+        else:
+            node._name = 'n' % node.id
+        node.format_spec = node._name
+        return node
+
+    def get_nodes(self, srcs):
+        """Return/make nodes from list of objects"""
+        srcs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
+        def make_root(src):
+            """Create root node from source and set its value"""
+            node = self.root_node(name=str(src))
+            node._current_value = src  # TODO use setter?
+            return node
+        return [s.node if isinstance(s, sig.node.Signal) else make_root(s) for s in srcs]
+
+    def register_node(self, node):
+        self.nodes.add(node)
 
     def __del__(self):
         self.active = False  # Set network inactive for safety (possible re-entrancy)

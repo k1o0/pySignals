@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class Signal(ABC):
@@ -7,10 +8,10 @@ class Signal(ABC):
         self._observers = []
 
     @abstractmethod
-    def apply_transfer(self, f):
+    def apply_transfer(self, trans_fun, args, format_spec):
         pass
 
-    # @abstractmethod
+    @abstractmethod
     def map(self, f, format_spec=None):
         pass
 
@@ -18,11 +19,15 @@ class Signal(ABC):
     def map2(self, other, f, format_spec=None):
         pass
 
+    @abstractmethod
+    def mapn(*args, f, format_spec=None):
+        pass
+
     def __add__(self, other):
-        return self.map2(other, self.__add__, format_spec='({0} + {1})')
+        return self.map2(other, np.add, format_spec='({0} + {1})')
 
     def __sub__(self, other):
-        pass
+        return self.map2(other, np.subtract, format_spec='({0} - {1})')
 
     def __mul__(self, other):
         pass

@@ -7,7 +7,6 @@ from random import randint
 class NetTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        print('Setting up :)')
         cls.networks = Network.networks  # Add networks array
         assert not cls.networks  # Ensure empty
 
@@ -36,6 +35,22 @@ class NetTest(unittest.TestCase):
 
         def add_net(): nets.append(sig.Net(debug=True))
         self.assertRaises(Exception, add_net, 'failed to raise exception on max networks exceeded')
+
+    def test_delete(self):
+        # TODO Add test for delete nodes
+        pass
+
+    def test_root_node(self):
+        # TODO Add test for delete nodes
+        pass
+
+    def test_origin(self):
+        # TODO Add test for delete nodes
+        pass
+
+    def test_get_nodes(self):
+        # TODO Add test for delete nodes
+        pass
 
     def tearDown(self):
         Network.Net.delete_networks()  # Delete networks
