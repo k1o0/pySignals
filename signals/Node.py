@@ -6,13 +6,14 @@ class Node:
     verbose = 0
 
     def __init__(self, net, srcs=None, trans_fun=transfer.identity,
-                 trans_arg=None, append_values=False):
+                 trans_arg=None, append_values=False, format_spec=None):
         if srcs is None:
             srcs = list()
         assert net.is_valid()
         self.net = net
         self.id = net.next_free_node()
         self.inputs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
+        self.display_inputs = self.inputs
         self._current_value = None
         self._working_value = None
         self._append_values = append_values
@@ -20,6 +21,7 @@ class Node:
         self.queued = False  # Transaction status
         self.transferer = trans_fun
         self.trans_arg = trans_arg
+        self.format_spec = format_spec
         self.targets = set()  # List of downstream nodes
         net.register_node(self)  # Add node to network node set
         for src in self.inputs:  # Register node with targets
@@ -30,7 +32,13 @@ class Node:
 
     def name(self):
         """Name set with format spec"""
-        return self._name()
+        if self.format_spec is not None:
+            child_names = [n.name() for n in self.display_inputs]
+            name = self.format_spec.format(*child_names)
+        else:
+            child_names = str(self.display_inputs)
+            name = str(self) + ' = ' + self.transferer.__name__ + '(' + child_names + ')'
+        return name
 
     def __str__(self):
         return 'Node #{}'.format(self.id)
@@ -59,7 +67,7 @@ class Node:
 
     def __del__(self):
         if self.verbose:
-            print('Del called on node #' % self.id)
+            print('Del called on node #%d' % self.id)
         self.active = False  # For possible reentrancy
         for src in self.inputs:
             src.targets.discard(self)  # Remove node from target list
@@ -88,9 +96,13 @@ class Signal(sig.Signal.Signal):
         net = args[0].node.net
         inps = net.get_nodes(args)
         assert len(set([n.net.id for n in inps])) == 1  # TODO move to get_nodes
-        node = sig.node.Node(net, srcs=inps, trans_fun=trans_fun, trans_arg=trans_arg)
+        node = sig.node.Node(net, srcs=inps, trans_fun=trans_fun,
+                             trans_arg=trans_arg, format_spec=format_spec)
         # TODO set format spec of node
         return sig.node.Signal(node)
+
+    def __repr__(self):
+        return self.node.name()
 
 
 class OriginSignal(Signal):

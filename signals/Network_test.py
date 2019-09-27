@@ -19,7 +19,7 @@ class NetTest(unittest.TestCase):
         self.assertEqual(nets[0].id, 0, 'unexpected id')
         # Add another and set size
         i = randint(1, 4000)
-        nets.append(sig.Net(size=i,debug=True))  # Add with specified size
+        nets.append(sig.Net(size=i, debug=True))  # Add with specified size
         self.assertEqual(nets[-1].size, i, 'failed to set size property')
         self.assertTrue(len(self.networks) == 2, 'failed to add network to list')
         self.assertEqual(nets[-1].id, 1, 'unexpected id')
@@ -36,28 +36,55 @@ class NetTest(unittest.TestCase):
         def add_net(): nets.append(sig.Net(debug=True))
         self.assertRaises(Exception, add_net, 'failed to raise exception on max networks exceeded')
 
-    @unittest.skip('Not ready yet')
     def test_delete(self):
-        # TODO Add test for delete nodes
-        pass
+        net = sig.Net(debug=True)
+        assert net.is_valid()
+        # Add some nodes to network
+        net.origin('t') + 4
+        nodes = list(net.nodes)  # Copy nodes to list
+        net.__del__()  # Delete our network
+        self.assertFalse(net.is_valid(), 'failed to inactivate net on delete')
+        self.assertFalse(net.nodes, 'failed to remove nodes on net delete')
+        self.assertFalse(any(node.is_valid() for node in nodes), 'failed to delete all nodes')
 
-    @unittest.skip('Not ready yet')
+
     def test_root_node(self):
-        # TODO Add test for delete nodes
-        pass
+        name = 'root'
+        node = sig.Net().root_node(name)
+        self.assertTrue(node.is_valid(), 'root node not valid')
+        self.assertTrue(node in node.net.nodes, 'failed to register to network')
+        self.assertEqual(node.name(), name, 'failed to set name')
 
-    @unittest.skip('Not ready yet')
     def test_origin(self):
-        # TODO Add test for delete nodes
-        pass
+        net = sig.Net()
+        assert not net.nodes
+        name = 'test'
+        o = net.origin(name)
+        self.assertTrue(isinstance(o, sig.node.OriginSignal),
+                        'expected sig.node.OriginSignal but {} returned instead'.format(''))
+        self.assertEqual(str(o), name, 'failed to correctly set name')
+        self.assertEqual(list(net.nodes), [o.node], 'failed to register node with network')
 
-    @unittest.skip('Not ready yet')
     def test_get_nodes(self):
-        # TODO Add test for delete nodes
-        pass
+        net = sig.Net()
+        assert not net.nodes
+        inputs = (net.origin('input'), 2, '4')
+        nodes = net.get_nodes(inputs)
+        self.assertTrue(all(isinstance(o, sig.node.Node) for o in nodes),
+                        'not all elements are nodes')
+        self.assertEqual(len(inputs), len(nodes),
+                         'expected list of length {} but {} returned instead'
+                         .format(len(inputs), len(nodes)))
+        self.assertEqual(len(net.nodes), len(nodes), 'Not all nodes registered to network')
+        self.assertRaises(TypeError, lambda: net.get_nodes(4))
+        # Test value set in root node
+        VALUE = 5
+        node = net.get_nodes((VALUE,))[0]
+        self.assertEqual(node.get_value(), VALUE, 'failed to set value')
 
     def tearDown(self):
         Network.Net.delete_networks()  # Delete networks
+        assert not any(net.is_valid() for net in Network.networks)
 
 
 if __name__ == '__main__':

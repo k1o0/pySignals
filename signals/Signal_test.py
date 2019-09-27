@@ -8,19 +8,17 @@ class SignalTest(unittest.TestCase):
         cls.net = sig.Net()
         cls.origin = cls.net.origin('input')
 
-    @unittest.skip('Not ready yet')
     def test_add(self):
         s = self.origin + 2
-        # TODO Test format spec
+        self.assertEqual(s.__repr__(), 'input + 2', 'failed to correctly format representation')
         self.origin.post(2)
-        self.assertEqual(s.node.get_value(), 4)
+        self.assertEqual(s.node.get_value(), 4, 'incorrect value')
 
-    @unittest.skip('Not ready yet')
     def test_sub(self):
-        s = self.origin + 5
-        # TODO Test format spec
-        self.origin.post(2)
-        self.assertEqual(s.node.get_value(), 3)
+        s = self.origin - 3
+        self.assertEqual(s.__repr__(), 'input - 3', 'failed to correctly format representation')
+        self.origin.post(5)
+        self.assertEqual(s.node.get_value(), 2, 'incorrect value')
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ networks = set()
 def next_free_network():
     """Return next free network id TODO Make static method?"""
     ids = set(range(Net.MAX_NETWORKS))
-    in_use = {net.id for net in networks if net.active}
+    in_use = {net.id for net in networks if net.is_valid()}
     available_ids = ids.difference(in_use)
     if not available_ids:
         raise Exception('Max number of active networks reached')
@@ -23,17 +23,18 @@ class Net:
         :param size:
         :param debug:
         """
+        self.nodes = set()  # Initialize node list
+        self.debug = debug  # Debug mode
+        # TODO Deal with max network error better
         self.id = next_free_network()  # Find next available network
         self.active = True  # Activate network
         networks.add(self)  # Add to network list
         self.size = size  # Max number of nodes in network
-        self.debug = debug  # Debug mode
-        self.nodes = set()  # Initialize node list
         if debug:
             sig.node.Node.verbose = 1
 
     def is_valid(self):
-        return self.active & (self.id <= self.MAX_NETWORKS)
+        return self.active & (self.id < self.MAX_NETWORKS)
 
     def next_free_node(self):
         """Return next free node id"""
@@ -58,8 +59,14 @@ class Net:
         return node
 
     def get_nodes(self, srcs):
-        """Return/make nodes from list of objects"""
-        srcs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
+        """
+        Return/make nodes from tuple of objects
+        :param srcs: A tuple of Signal objects and/or objects to turn into root nodes
+        :return: A list of nodes the length of srcs
+        """
+        if not isinstance(srcs, tuple):
+            raise TypeError("input must be a tuple")
+
         def make_root(src):
             """Create root node from source and set its value"""
             node = self.root_node(name=str(src))
@@ -74,11 +81,12 @@ class Net:
         self.active = False  # Set network inactive for safety (possible re-entrancy)
         if self.debug:
             print('Deleting network {}'.format(self.id))
-        # TODO Delete nodes
-        networks.remove(self)  # Remove from list
+        for node in list(self.nodes):  # Make list copy as size of set changes each iteration
+            node.__del__()
+        networks.discard(self)  # Remove from list
 
     @staticmethod
     def delete_networks():
         print('Deleting all networks')
-        for net in networks:
-            del net
+        for net in list(networks):  # Make list copy as size of set changes each iteration
+            net.__del__()

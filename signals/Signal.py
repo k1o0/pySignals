@@ -23,11 +23,15 @@ class Signal(ABC):
     def mapn(*args, f, format_spec=None):
         pass
 
+    @abstractmethod
+    def __repr__(self):
+        pass
+
     def __add__(self, other):
-        return self.map2(other, np.add, format_spec='({0} + {1})')
+        return self.map2(other, np.add, format_spec='{0} + {1}')
 
     def __sub__(self, other):
-        return self.map2(other, np.subtract, format_spec='({0} - {1})')
+        return self.map2(other, np.subtract, format_spec='{0} - {1}')
 
     def __mul__(self, other):
         pass
