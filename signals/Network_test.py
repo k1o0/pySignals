@@ -47,7 +47,6 @@ class NetTest(unittest.TestCase):
         self.assertFalse(net.nodes, 'failed to remove nodes on net delete')
         self.assertFalse(any(node.is_valid() for node in nodes), 'failed to delete all nodes')
 
-
     def test_root_node(self):
         name = 'root'
         node = sig.Net().root_node(name)

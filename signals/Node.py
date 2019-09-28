@@ -22,10 +22,10 @@ class Node:
         self.transferer = trans_fun
         self.trans_arg = trans_arg
         self.format_spec = format_spec
-        self.targets = set()  # List of downstream nodes
+        self.targets = list()  # List of downstream nodes
         net.register_node(self)  # Add node to network node set
         for src in self.inputs:  # Register node with targets
-            src.targets.add(self)
+            src.targets.append(self)
 
     def is_valid(self):
         return self.active & (self.id <= self.net.size)
@@ -70,13 +70,15 @@ class Node:
             print('Del called on node #%d' % self.id)
         self.active = False  # For possible reentrancy
         for src in self.inputs:
-            src.targets.discard(self)  # Remove node from target list
+            if self in src.targets:
+                src.targets.remove(self)  # Remove node from target list
         self.net.nodes.discard(self)  # De-register from network
 
 
 class Signal(sig.Signal.Signal):
     def __init__(self, node):
         self.node = node
+        self.id = []
 
     def map(self, f, format_spec=None):
         return self.mapn(f=f, format_spec=format_spec)
@@ -92,7 +94,7 @@ class Signal(sig.Signal.Signal):
                                       trans_arg=f,
                                       format_spec=format_spec)
 
-    def apply_transfer(*args, trans_fun, trans_arg, format_spec):
+    def apply_transfer(*args, trans_fun, trans_arg=None, format_spec):
         net = args[0].node.net
         inps = net.get_nodes(args)
         assert len(set([n.net.id for n in inps])) == 1  # TODO move to get_nodes
@@ -100,6 +102,18 @@ class Signal(sig.Signal.Signal):
                              trans_arg=trans_arg, format_spec=format_spec)
         # TODO set format spec of node
         return sig.node.Signal(node)
+
+    def on_value(self, f):
+        self.node.targets.append(self)  # TODO make private
+        self.notify = lambda n, _: f(n.get_value())
+        return lambda: self.node.targets.remove(self)
+
+    def output(self):
+        return self.on_value(print)
+
+    def to(self, other):
+        p = self.apply_transfer(other, trans_fun=sig.transfer.latch, format_spec='{}.to({})')
+        p.node.set_value(False)
 
     def __repr__(self):
         return self.node.name()

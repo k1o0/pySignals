@@ -23,6 +23,10 @@ class TransfererTest(unittest.TestCase):
         sig.transfer.mapn([a], out, np.square)  # Call with set values
         self.assertEqual(out.get_value(), VALUE**2, 'failed to update node value')
 
+    @unittest.skip('Not ready yet')
+    def test_latch(self):
+        pass
+
     def setUp(self):
         self.net = sig.Network.Net()
         assert not self.net.nodes

@@ -12,6 +12,14 @@ class Signal(ABC):
         pass
 
     @abstractmethod
+    def on_value(self, f):
+        pass
+
+    @abstractmethod
+    def output(self):
+        pass
+
+    @abstractmethod
     def map(self, f, format_spec=None):
         pass
 
@@ -21,6 +29,10 @@ class Signal(ABC):
 
     @abstractmethod
     def mapn(*args, f, format_spec=None):
+        pass
+
+    @abstractmethod
+    def to(self, other):
         pass
 
     @abstractmethod
@@ -79,7 +91,7 @@ class Signal(ABC):
         pass
 
     def __gt__(self, other):
-        pass
+        return self.map2(other, np.greater, format_spec='{0} > {1}')
 
     def __ge__(self, other):
         pass
