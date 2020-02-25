@@ -70,7 +70,7 @@ class Net:
         def make_root(src):
             """Create root node from source and set its value"""
             node = self.root_node(name=str(src))
-            node._current_value = src  # TODO use setter?
+            node.value = src
             return node
         return [s.node if isinstance(s, sig.node.Signal) else make_root(s) for s in srcs]
 

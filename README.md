@@ -10,7 +10,7 @@ o = net.origin('input')  # Create input signal
 s = o + 2  # Derive signal from input
 
 o.post(2)  # Post to input signal
-print(s.node.get_value())  # 4
+print(s.node.value)  # 4
 ```
 
 ## Tests

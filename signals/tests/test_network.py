@@ -1,13 +1,13 @@
 import unittest
 import signals as sig
-from signals import Network
+from signals import network
 from random import randint
 
 
 class NetTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.networks = Network.networks  # Add networks array
+        cls.networks = network.networks  # Add networks array
         assert not cls.networks  # Ensure empty
 
     def test_create(self):
@@ -79,11 +79,11 @@ class NetTest(unittest.TestCase):
         # Test value set in root node
         VALUE = 5
         node = net.get_nodes((VALUE,))[0]
-        self.assertEqual(node.get_value(), VALUE, 'failed to set value')
+        self.assertEqual(node.value, VALUE, 'failed to set value')
 
     def tearDown(self):
-        Network.Net.delete_networks()  # Delete networks
-        assert not any(net.is_valid() for net in Network.networks)
+        network.Net.delete_networks()  # Delete networks
+        assert not any(net.is_valid() for net in network.networks)
 
 
 if __name__ == '__main__':

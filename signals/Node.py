@@ -12,17 +12,19 @@ class Node:
         assert net.is_valid()
         self.net = net
         self.id = net.next_free_node()
+        self.__current_value = list() if append_values else None
+        self.__working_value = None
+        self._queued = False
+        self.queued = False  # Transaction status
+        self.targets = list()  # List of downstream nodes
+        self.value = None
         self.inputs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
         self.display_inputs = self.inputs
-        self._current_value = None
-        self._working_value = None
         self._append_values = append_values
         self.active = True  # Flag for whether in use
-        self.queued = False  # Transaction status
         self.transferer = trans_fun
         self.trans_arg = trans_arg
         self.format_spec = format_spec
-        self.targets = list()  # List of downstream nodes
         net.register_node(self)  # Add node to network node set
         for src in self.inputs:  # Register node with targets
             src.targets.append(self)
@@ -43,27 +45,58 @@ class Node:
     def __str__(self):
         return 'Node #{}'.format(self.id)
 
-    def get_value(self):
-        return self._working_value if self._working_value is not None else self._current_value
+    @property
+    def value(self):
+        return self.__working_value if self.__working_value is not None else self.__current_value
 
-    def set_value(self, value):
-        if self._append_values:
-            if self._working_value is not None:
-                self._working_value.append(value)
-            else:
-                self._working_value = [value]
+    @value.setter
+    def value(self, v):
+        self.__working_value = v
+        if len(self.targets) == 0:
+            self.__set__current_value()
         else:
-            self._working_value = value
-        for observer in self.targets:  # Notify downstream targets of change
-            observer.notify(self, 'updated')
+            for observer in self.targets:  # Notify downstream targets of change
+                observer.notify(self, 'updated')
+
+    @property
+    def queued(self):
+        return self._queued
+
+    @queued.setter
+    def queued(self, tf):
+        if tf:
+            self._queued = True
+        if self._queued and not tf:  # No longer queued
+            self.__set__current_value()  # Copy working value to current
+            self._queued = False
+            for observer in self.inputs:  # Notify upstream targets completed
+                observer.notify(self, 'completed')
 
     def notify(self, observable, event):
         if self.verbose:
             print('{} notified of "{}" event by {}'.format(self, event, observable))
-        if event == 'updated':
+        if event == 'updated':  # input value updated
             self.queued = True
             self.transferer(self.inputs, self, self.trans_arg)
-            self.queued = False
+            if (self.__working_value is not None) or (not self.targets):
+                # Set current value
+                self.queued = False
+        elif event == 'completed':  # target completed transaction
+            # Check whether all inputs are updated
+            self.queued = any(self.targets)
+        else:
+            pass
+
+    def __set__current_value(self):
+        value = self.__working_value
+        if not value:
+            return
+
+        if self._append_values:
+            self.__current_value.append(value)
+        else:
+            self.__current_value = value
+        self.__working_value = None  # Reset working value
 
     def __del__(self):
         if self.verbose:
@@ -75,10 +108,11 @@ class Node:
         self.net.nodes.discard(self)  # De-register from network
 
 
-class Signal(sig.Signal.Signal):
+class Signal(sig.signal.Signal):
     def __init__(self, node):
         self.node = node
         self.id = []
+        self.notify = lambda *args: args
 
     def map(self, f, format_spec=None):
         return self.mapn(f=f, format_spec=format_spec)
@@ -105,7 +139,7 @@ class Signal(sig.Signal.Signal):
 
     def on_value(self, f):
         self.node.targets.append(self)  # TODO make private
-        self.notify = lambda n, _: f(n.get_value())
+        self.notify = lambda n, _: f(n.value)  # @todo only one on_value allowed?
         return lambda: self.node.targets.remove(self)
 
     def output(self):
@@ -113,12 +147,12 @@ class Signal(sig.Signal.Signal):
 
     def to(self, other):
         p = self.apply_transfer(other, trans_fun=sig.transfer.latch, format_spec='{}.to({})')
-        p.node.set_value(False)
+        p.node.value = False
 
     def __repr__(self):
         return self.node.name()
 
 
 class OriginSignal(Signal):
-    def post(self, value):
-        self.node.set_value(value)
+    def post(self, v):
+        self.node.value = v

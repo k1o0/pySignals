@@ -13,21 +13,21 @@ class SignalTest(unittest.TestCase):
         s = self.origin + 2
         self.assertEqual(s.__repr__(), 'input + 2', 'failed to correctly format representation')
         self.origin.post(2)
-        self.assertEqual(s.node.get_value(), 4, 'incorrect value')
+        self.assertEqual(s.node.value, 4, 'incorrect value')
 
     def test_sub(self):
         s = self.origin - 3
         self.assertEqual(s.__repr__(), 'input - 3', 'failed to correctly format representation')
         self.origin.post(5)
-        self.assertEqual(s.node.get_value(), 2, 'incorrect value')
+        self.assertEqual(s.node.value, 2, 'incorrect value')
 
     def test_gt(self):
         s = self.origin > 3
         self.assertEqual(s.__repr__(), 'input > 3', 'failed to correctly format representation')
         self.origin.post(5)
-        self.assertTrue(s.node.get_value(), 'incorrect value')
+        self.assertTrue(s.node.value, 'incorrect value')
         self.origin.post(3)
-        self.assertFalse(s.node.get_value(), 'incorrect value')
+        self.assertFalse(s.node.value, 'incorrect value')
         # TODO test arrays
 
     def test_on_value(self):

@@ -51,31 +51,31 @@ class NodeTest(unittest.TestCase):
     def test_set_values(self):
         # Test setting values
         node = sig.node.Node(self.net)  # Create node
-        self.assertEqual(node.get_value(), None, 'expected None for value of new node')
+        self.assertEqual(node.value, None, 'expected None for value of new node')
         # Set a value
         i = randint(0, 10000)
-        node.set_value(i)
-        self.assertEqual(node.get_value(), i, 'expected None for value of new node')
+        node.value = i
+        self.assertEqual(node.value, i, 'expected None for value of new node')
         # Set another value
         i = randint(0, 10000)
-        node.set_value(i)
-        self.assertEqual(node.get_value(), i, 'expected None for value of new node')
+        node.value = i
+        self.assertEqual(node.value, i, 'expected None for value of new node')
         # Test appending values
         node = sig.node.Node(self.net, append_values=True)  # Create new node
         i = randint(0, 10000)
-        node.set_value(i)  # Set a couple of values
-        node.set_value(i)
-        actual = node.get_value()
+        node.value = i  # Set a couple of values
+        node.value = i
+        actual = node.value
         expected = (len(actual) == 2) & (actual[-1] == i)
         self.assertTrue(expected, 'failed to append values')
 
     def test_get_values(self):
         node = sig.node.Node(self.net)  # Create node
-        self.assertEqual(node.get_value(), None, 'expected None for value of new node')
-        node._current_value = 5
-        self.assertEqual(node.get_value(), node._current_value, 'failed to return current value')
-        node._working_value = 3
-        self.assertEqual(node.get_value(), node._working_value, 'failed to return working value')
+        self.assertEqual(node.value, None, 'expected None for value of new node')
+        node._Node__current_value = 5
+        self.assertEqual(node.value, node._Node__current_value, 'failed to return current value')
+        node._Node__working_value = 3
+        self.assertEqual(node.value, node._Node__working_value, 'failed to return working value')
 
     def test_transferer(self):
         # Test transfer function is called
@@ -84,7 +84,7 @@ class NodeTest(unittest.TestCase):
         def f(*args): args[2].append(True)  # Update `called` variable
         sig.node.Node(self.net, srcs=o, trans_fun=f, trans_arg=called)  # Create new node
         assert not called  # Ensure evaluates False
-        o.set_value(4)
+        o.value = 4
         self.assertTrue(called, 'failed to call transfer function')
 
     @unittest.skip('Not ready yet')
@@ -96,7 +96,7 @@ class NodeTest(unittest.TestCase):
         pass
 
     def setUp(self):
-        self.net = sig.Network.Net()
+        self.net = sig.network.Net()
         assert not self.net.nodes
 
     def tearDown(self):
