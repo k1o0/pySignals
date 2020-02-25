@@ -8,7 +8,7 @@ class Signal(ABC):
         self._observers = []
 
     @abstractmethod
-    def apply_transfer(self, trans_fun, args, format_spec):
+    def __apply_transfer(self, trans_fun, args, format_spec):
         pass
 
     @abstractmethod
@@ -46,7 +46,7 @@ class Signal(ABC):
         return self.map2(other, np.subtract, format_spec='{0} - {1}')
 
     def __mul__(self, other):
-        pass
+        return self.map2(other, np.multiply, format_spec='{0} * {1}')
 
     def __pow__(self, modulo=None):
         pass
@@ -76,7 +76,7 @@ class Signal(ABC):
         pass
 
     def __invert__(self):
-        pass
+        return self.map(np.invert, format_spec='~{0}')
 
     def __lt__(self, other):
         pass

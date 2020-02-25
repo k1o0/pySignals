@@ -21,6 +21,12 @@ class SignalTest(unittest.TestCase):
         self.origin.post(5)
         self.assertEqual(s.node.value, 2, 'incorrect value')
 
+    def test_mul(self):
+        s = self.origin * 2
+        self.assertEqual(s.__repr__(), 'input * 2', 'failed to correctly format representation')
+        self.origin.post(5)
+        self.assertEqual(s.node.value, 10, 'incorrect value')
+
     def test_gt(self):
         s = self.origin > 3
         self.assertEqual(s.__repr__(), 'input > 3', 'failed to correctly format representation')
@@ -50,6 +56,22 @@ class SignalTest(unittest.TestCase):
     @unittest.skip('Not ready yet')
     def test_to(self):
         pass
+
+    def test_map(self):
+        """Test map
+        Ensure map works for both mapping through functions and mapping to value
+        """
+        # Test mapping value
+        s = self.origin.map(True)
+        self.assertEqual(s.__repr__(), 'input->True', 'failed to correctly format representation')
+        self.origin.post(5)
+        self.assertTrue(s.node.value, 'incorrect value')
+
+        # Test mapping function
+        s = self.origin.map(str)
+        self.assertEqual(s.__repr__(), 'str(input)', 'failed to correctly format representation')
+        self.origin.post(3)
+        self.assertEqual(s.node.value, '3', 'incorrect value')
 
 
 if __name__ == '__main__':

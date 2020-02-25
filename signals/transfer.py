@@ -37,5 +37,4 @@ def latch(inputs, node, _):
         # previously not armed *and* new arm -> new armed
         node.value = True
     else:
-        # no latch state change
-        pass
+        pass  # no latch state change

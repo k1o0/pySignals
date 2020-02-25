@@ -15,9 +15,8 @@ class Node:
         self.__current_value = list() if append_values else None
         self.__working_value = None
         self._queued = False
-        self.queued = False  # Transaction status
+        self.queued = False  # Transaction status @todo doesn't need initializing
         self.targets = list()  # List of downstream nodes
-        self.value = None
         self.inputs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
         self.display_inputs = self.inputs
         self._append_values = append_values
@@ -51,6 +50,8 @@ class Node:
 
     @value.setter
     def value(self, v):
+        if v is None:
+            return
         self.__working_value = v
         if len(self.targets) == 0:
             self.__set__current_value()
@@ -115,6 +116,18 @@ class Signal(sig.signal.Signal):
         self.notify = lambda *args: args
 
     def map(self, f, format_spec=None):
+        if not callable(f):
+            value = f
+
+            # close scope
+            def always(_):
+                return value
+            if format_spec is None:
+                format_spec = '{}->' + str(value)
+            f = always
+        else:
+            if format_spec is None:
+                format_spec = f.__name__ + '({})'
         return self.mapn(f=f, format_spec=format_spec)
 
     def map2(self, other, f, format_spec=None):
@@ -123,12 +136,12 @@ class Signal(sig.signal.Signal):
 
     def mapn(*args, f=None, format_spec=None):
         # Mess with format spec and input nodes
-        return args[0].apply_transfer(*args[1:],
-                                      trans_fun=transfer.mapn,
-                                      trans_arg=f,
-                                      format_spec=format_spec)
+        return args[0].__apply_transfer(*args[1:],
+                                        trans_fun=transfer.mapn,
+                                        trans_arg=f,
+                                        format_spec=format_spec)
 
-    def apply_transfer(*args, trans_fun, trans_arg=None, format_spec):
+    def __apply_transfer(*args, trans_fun, trans_arg=None, format_spec):
         net = args[0].node.net
         inps = net.get_nodes(args)
         assert len(set([n.net.id for n in inps])) == 1  # TODO move to get_nodes
@@ -138,7 +151,8 @@ class Signal(sig.signal.Signal):
         return sig.node.Signal(node)
 
     def on_value(self, f):
-        self.node.targets.append(self)  # TODO make private
+        # @fixme handle not returned
+        self.node.targets.append(self)  # TODO make private; fixme make copy?
         self.notify = lambda n, _: f(n.value)  # @todo only one on_value allowed?
         return lambda: self.node.targets.remove(self)
 
@@ -146,7 +160,7 @@ class Signal(sig.signal.Signal):
         return self.on_value(print)
 
     def to(self, other):
-        p = self.apply_transfer(other, trans_fun=sig.transfer.latch, format_spec='{}.to({})')
+        p = self.__apply_transfer(other, trans_fun=sig.transfer.latch, format_spec='{}.to({})')
         p.node.value = False
 
     def __repr__(self):

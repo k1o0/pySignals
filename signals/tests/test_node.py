@@ -70,6 +70,10 @@ class NodeTest(unittest.TestCase):
         self.assertTrue(expected, 'failed to append values')
 
     def test_get_values(self):
+        """
+        Test values getter
+        Expected behaviour: if working value set, return this, otherwise return current value
+        """
         node = sig.node.Node(self.net)  # Create node
         self.assertEqual(node.value, None, 'expected None for value of new node')
         node._Node__current_value = 5
