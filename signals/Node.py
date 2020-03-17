@@ -1,5 +1,7 @@
 import signals as sig
 from signals import transfer
+from signals.mappable import NumpyOperators, BasicOperators
+#  import types  # https://stackoverflow.com/a/959064
 
 
 class Node:
@@ -12,7 +14,7 @@ class Node:
         assert net.is_valid()
         self.net = net
         self.id = net.next_free_node()
-        self.__current_value = list() if append_values else None
+        self.__current_value = tuple() if append_values else None
         self.__working_value = None
         self._queued = False
         self.queued = False  # Transaction status @todo doesn't need initializing
@@ -115,6 +117,14 @@ class Signal(sig.signal.Signal):
         self.id = []
         self.notify = lambda *args: args
 
+    def factory(type):
+        if type == "numpy":
+            return NumpySignal
+        else:
+            return BasicSignal
+
+    factory = staticmethod(factory)
+
     def map(self, f, format_spec=None):
         if not callable(f):
             value = f
@@ -165,6 +175,14 @@ class Signal(sig.signal.Signal):
 
     def __repr__(self):
         return self.node.name()
+
+
+class NumpySignal(NumpyOperators, Signal):
+    pass
+
+
+class BasicSignal(BasicOperators, Signal):
+    pass
 
 
 class OriginSignal(Signal):
