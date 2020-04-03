@@ -32,6 +32,10 @@ class Signal(ABC):
         pass
 
     @abstractmethod
+    def merge(*args):
+        pass
+
+    @abstractmethod
     def to(self, other):
         pass
 

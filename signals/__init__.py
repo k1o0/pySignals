@@ -1,10 +1,9 @@
-__all__ = ['network', 'signal']
+__all__ = ['network']
 
-from signals import network
-from signals import signal
+from signals.network import Net
+from signals.signal import Signal
 from signals import transfer
 from signals import node
 #  from signals.transfer import *
-Net = network.Net
-Signal = signal.Signal
+#Net = network.Net
 

@@ -72,7 +72,7 @@ class Net:
             node = self.root_node(name=str(src))
             node.value = src
             return node
-        return [s.node if isinstance(s, sig.node.Signal) else make_root(s) for s in srcs]
+        return [s.node if issubclass(type(s), sig.Signal) else make_root(s) for s in srcs]
 
     def register_node(self, node):
         self.nodes.add(node)

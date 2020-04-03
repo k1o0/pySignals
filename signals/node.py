@@ -53,11 +53,9 @@ class Node:
         if v is None:
             return
         self.__working_value = v
-        if len(self.targets) == 0:
-            self.__set__current_value()
-        else:
-            for observer in self.targets:  # Notify downstream targets of change
-                observer.notify(self, 'updated')
+        self.queued = True
+        for observer in self.targets:  # Notify downstream targets of change
+            observer.notify(self, 'updated')
 
     @property
     def queued(self):
@@ -71,7 +69,7 @@ class Node:
             self.__set__current_value()  # Copy working value to current
             self._queued = False
             for observer in self.inputs:  # Notify upstream targets completed
-                observer.notify(self, 'completed')
+                observer.notify(self, 'completed')  # @todo record if affected
 
     def notify(self, observable, event):
         if self.verbose:
@@ -84,7 +82,7 @@ class Node:
                 self.queued = False
         elif event == 'completed':  # target completed transaction
             # Check whether all inputs are updated
-            self.queued = any(self.targets)
+            self.queued = any([n.queued for n in self.targets])
         else:
             pass
 
@@ -109,10 +107,9 @@ class Node:
         self.net.nodes.discard(self)  # De-register from network
 
 
-class Signal(sig.signal.Signal):
+class Signal(sig.Signal):
     def __init__(self, node):
         self.node = node
-        self.id = []
         self.notify = lambda *args: args
 
     def map(self, f, format_spec=None):
@@ -141,6 +138,11 @@ class Signal(sig.signal.Signal):
                                         trans_arg=f,
                                         format_spec=format_spec)
 
+    def merge(*args):
+        format_spec = '(' + ' ~ '.join(['{}'] * len(args)) + ')'  # e.g. ({} ~ {} ~ {})
+        kwargs = {'trans_fun': transfer.merge, 'format_spec': format_spec}
+        return args[0].__apply_transfer(*args[1:], **kwargs)
+
     def __apply_transfer(*args, trans_fun, trans_arg=None, format_spec):
         net = args[0].node.net
         inps = net.get_nodes(args)
@@ -165,6 +167,10 @@ class Signal(sig.signal.Signal):
 
     def __repr__(self):
         return self.node.name()
+
+    def __del__(self):
+        if hasattr(self, 'node'):
+            del self.node
 
 
 class OriginSignal(Signal):

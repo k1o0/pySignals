@@ -8,11 +8,19 @@ def identity(inputs, node, _):
 def mapn(inputs, node, f):
     inpvals = [n.value for n in inputs]
     if not all(inpvals):
-        return  # TODO return None?
+        return
     try:
         node.value = f(*inpvals)  # TODO use setter (could warn of type changes)?
     except Exception:
         raise Exception('Error in map function')
+
+
+def merge(inputs, node, _):
+    for inp in inputs:
+        v = inp.value
+        if inp.queued:  # if working value set
+            node.value = v
+            return
 
 
 def latch(inputs, node, _):
