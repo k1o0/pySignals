@@ -4,8 +4,10 @@ import random
 
 
 class SignalTest(unittest.TestCase):
+    net = None
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.net = sig.Net()
 
     @classmethod
@@ -16,25 +18,25 @@ class SignalTest(unittest.TestCase):
         self.origin = self.net.origin('input')
         self.addCleanup(self.origin.__del__)
 
-    def test_add(self):
+    def test_add(self) -> None:
         s = self.origin + 2
         self.assertEqual(s.__repr__(), 'input + 2', 'failed to correctly format representation')
         self.origin.post(2)
         self.assertEqual(s.node.value, 4, 'incorrect value')
 
-    def test_sub(self):
+    def test_sub(self) -> None:
         s = self.origin - 3
         self.assertEqual(s.__repr__(), 'input - 3', 'failed to correctly format representation')
         self.origin.post(5)
         self.assertEqual(s.node.value, 2, 'incorrect value')
 
-    def test_mul(self):
+    def test_mul(self) -> None:
         s = self.origin * 2
         self.assertEqual(s.__repr__(), 'input * 2', 'failed to correctly format representation')
         self.origin.post(5)
         self.assertEqual(s.node.value, 10, 'incorrect value')
 
-    def test_gt(self):
+    def test_gt(self) -> None:
         s = self.origin > 3
         self.assertEqual(s.__repr__(), 'input > 3', 'failed to correctly format representation')
         self.origin.post(5)
@@ -43,7 +45,7 @@ class SignalTest(unittest.TestCase):
         self.assertFalse(s.node.value, 'incorrect value')
         # TODO test arrays
 
-    def test_on_value(self):
+    def test_on_value(self) -> None:
         s = self.origin
         actual = list()
         unsub = s.on_value(lambda x: actual.append(x))
@@ -57,14 +59,14 @@ class SignalTest(unittest.TestCase):
         self.assertEqual(actual, expected, 'failed unsub observer')
 
     @unittest.skip('Not ready yet')
-    def test_output(self):
+    def test_output(self) -> None:
         pass
 
     @unittest.skip('Not ready yet')
-    def test_to(self):
+    def test_to(self) -> None:
         pass
 
-    def test_map(self):
+    def test_map(self) -> None:
         """Test map
         Ensure map works for both mapping through functions and mapping to value
         """
@@ -80,7 +82,7 @@ class SignalTest(unittest.TestCase):
         self.origin.post(3)
         self.assertEqual(s.node.value, '3', 'incorrect value')
 
-    def test_merge(self):
+    def test_merge(self) -> None:
         """Test merge
         Ensure returns the first working value (should only return queued input values)
         """

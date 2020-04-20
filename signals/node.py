@@ -1,14 +1,19 @@
+from __future__ import annotations
 import signals as sig
 from signals import transfer
+from typing import Callable, Tuple, Union, Any, Optional
+
+# Annotations
+transferer = Callable[[Tuple['Node'], 'Node', Optional[Callable]], None]
 
 
 class Node:
     verbose = 0
 
-    def __init__(self, net, srcs=None, trans_fun=transfer.identity,
-                 trans_arg=None, append_values=False, format_spec=None):
+    def __init__(self, net: sig.Net, srcs: Optional[Tuple, Node] = None, trans_fun: transferer = transfer.identity,
+                 trans_arg: Optional[Callable] = None, append_values: bool = False, format_spec: str = None) -> None:
         if srcs is None:
-            srcs = list()
+            srcs = tuple()
         assert net.is_valid()
         self.net = net
         self.id = net.next_free_node()
@@ -17,7 +22,7 @@ class Node:
         self._queued = False
         self.queued = False  # Transaction status @todo doesn't need initializing
         self.targets = list()  # List of downstream nodes
-        self.inputs = srcs if isinstance(srcs, list) else [srcs]  # Ensure list
+        self.inputs = (srcs,) if isinstance(srcs, sig.node.Node) else tuple(srcs)  # Ensure tuple
         self.display_inputs = self.inputs
         self._append_values = append_values
         self.active = True  # Flag for whether in use
@@ -28,28 +33,28 @@ class Node:
         for src in self.inputs:  # Register node with targets
             src.targets.append(self)
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.active & (self.id <= self.net.size)
 
-    def name(self):
+    def name(self) -> str:
         """Name set with format spec"""
+        child_names = [n.name() for n in self.display_inputs]
         if self.format_spec is not None:
-            child_names = [n.name() for n in self.display_inputs]
             name = self.format_spec.format(*child_names)
-        else:
-            child_names = str(self.display_inputs)
-            name = str(self) + ' = ' + self.transferer.__name__ + '(' + child_names + ')'
+        else:  # e.g. 'Node #4 <- mapn(t, 2, add)'
+            arg_name = self.trans_arg.__name__ if hasattr(self.trans_arg, '__name__') else self.trans_arg
+            name = '{} <- {}({}, {})'.format(self, self.transferer.__name__, ', '.join(child_names), arg_name)
         return name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Node #{}'.format(self.id)
 
     @property
-    def value(self):
+    def value(self) -> Any:
         return self.__working_value if self.__working_value is not None else self.__current_value
 
     @value.setter
-    def value(self, v):
+    def value(self, v: Any) -> None:
         if v is None:
             return
         self.__working_value = v
@@ -58,11 +63,12 @@ class Node:
             observer.notify(self, 'updated')
 
     @property
-    def queued(self):
+    def queued(self) -> bool:
+        """Get queued status"""
         return self._queued
 
     @queued.setter
-    def queued(self, tf):
+    def queued(self, tf: bool) -> None:
         if tf:
             self._queued = True
         if self._queued and not tf:  # No longer queued
@@ -71,7 +77,7 @@ class Node:
             for observer in self.inputs:  # Notify upstream targets completed
                 observer.notify(self, 'completed')  # @todo record if affected
 
-    def notify(self, observable, event):
+    def notify(self, observable: Node, event: str) -> None:
         if self.verbose:
             print('{} notified of "{}" event by {}'.format(self, event, observable))
         if event == 'updated':  # input value updated
@@ -86,7 +92,7 @@ class Node:
         else:
             pass
 
-    def __set__current_value(self):
+    def __set__current_value(self) -> None:
         value = self.__working_value
         if not value:
             return
@@ -97,7 +103,7 @@ class Node:
             self.__current_value = value
         self.__working_value = None  # Reset working value
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.verbose:
             print('Del called on node #%d' % self.id)
         self.active = False  # For possible reentrancy
@@ -108,11 +114,11 @@ class Node:
 
 
 class Signal(sig.Signal):
-    def __init__(self, node):
-        self.node = node
+    def __init__(self, node: Node) -> None:
+        self.node: Node = node
         self.notify = lambda *args: args
 
-    def map(self, f, format_spec=None):
+    def map(self, f: Callable, format_spec: str = None) -> Signal:
         if not callable(f):
             value = f
 
@@ -127,52 +133,56 @@ class Signal(sig.Signal):
                 format_spec = f.__name__ + '({})'
         return self.mapn(f=f, format_spec=format_spec)
 
-    def map2(self, other, f, format_spec=None):
+    def map2(self, other: Any, f: Callable, format_spec: str = None) -> Signal:
         # Mess with format spec and input nodes
         return self.mapn(other, f=f, format_spec=format_spec)
 
-    def mapn(*args, f=None, format_spec=None):
+    def mapn(*args: Union[Signal, Any, ...], f: Callable = None, format_spec: str = None) -> Signal:
         # Mess with format spec and input nodes
         return args[0].__apply_transfer(*args[1:],
                                         trans_fun=transfer.mapn,
                                         trans_arg=f,
                                         format_spec=format_spec)
 
-    def merge(*args):
+    def merge(*args: Signal) -> Signal:
         format_spec = '(' + ' ~ '.join(['{}'] * len(args)) + ')'  # e.g. ({} ~ {} ~ {})
         kwargs = {'trans_fun': transfer.merge, 'format_spec': format_spec}
         return args[0].__apply_transfer(*args[1:], **kwargs)
 
-    def __apply_transfer(*args, trans_fun, trans_arg=None, format_spec):
+    def __apply_transfer(*args: Union[Signal, Any],
+                         trans_fun: transferer = transfer.identity,
+                         trans_arg: Optional[Callable] = None,
+                         format_spec: str) -> Signal:
         net = args[0].node.net
-        inps = net.get_nodes(args)
+        inps = tuple(net.get_nodes(args))
         assert len(set([n.net.id for n in inps])) == 1  # TODO move to get_nodes
         node = sig.node.Node(net, srcs=inps, trans_fun=trans_fun,
                              trans_arg=trans_arg, format_spec=format_spec)
         # TODO set format spec of node
         return sig.node.Signal(node)
 
-    def on_value(self, f):
+    def on_value(self, f: Callable) -> Callable:
         # @fixme handle not returned
         self.node.targets.append(self)  # TODO make private; fixme make copy?
         self.notify = lambda n, _: f(n.value)  # @todo only one on_value allowed?
         return lambda: self.node.targets.remove(self)
 
-    def output(self):
+    def output(self) -> Callable:
         return self.on_value(print)
 
-    def to(self, other):
-        p = self.__apply_transfer(other, trans_fun=sig.transfer.latch, format_spec='{}.to({})')
+    def to(self, other: Signal) -> Signal:
+        p = self.__apply_transfer(other, trans_fun=transfer.latch, format_spec='{}.to({})')
         p.node.value = False
+        return p
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.node.name()
 
-    def __del__(self):
+    def __del__(self) -> None:
         if hasattr(self, 'node'):
             del self.node
 
 
 class OriginSignal(Signal):
-    def post(self, v):
+    def post(self, v: Any) -> None:
         self.node.value = v
